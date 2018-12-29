@@ -134,8 +134,8 @@ init([InitArgs]) ->
 
 handle_call({start_app,Id,Vsn}, _From, State)->
     Reply = case if_dns:call("nfv_mgr",nfv_mgr,start_application,[Id,Vsn]) of
-		{ok,InstanceId}->
-		    if_log:call(State#state.init_args,ok,[?MODULE,?LINE,'started application',Id,Vsn,InstanceId]),
+		{ok,Id,Vsn}->
+		    if_log:call(State#state.init_args,ok,[?MODULE,?LINE,'started application',Id,Vsn]),
 		    {ok,['started',Id,Vsn]};
 		{error,Failed}->
 		    if_log:call(State#state.init_args,error,[?MODULE,?LINE,'failed to start',Id,Vsn,Failed]),

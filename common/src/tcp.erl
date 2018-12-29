@@ -22,7 +22,7 @@
 %% --------------------------------------------------------------------
 %% External exports
 %% --------------------------------------------------------------------
--export([listen/1,call/5,call/6,call/3,cast/3,server_seq/1,server_parallel/1,par_connect/1,loop/1]).
+-export([listen/1,call/5,call/6,call/3,cast/3,server_seq/1,server_parallel/1,par_connect/1,single/1]).
 
 
 %%
@@ -142,7 +142,7 @@ server_seq(Port)->
 
 seq_loop(LSock)->
     {ok,Socket}=gen_tcp:accept(LSock),
-    loop(Socket),
+    single(Socket),
     seq_loop(LSock).
 
 %% --------------------------------------------------------------------
@@ -161,13 +161,13 @@ server_parallel(Port)->
 par_connect(LSock)->
     {ok,Socket}=gen_tcp:accept(LSock),
     spawn(fun()-> par_connect(LSock) end),
-    tcp:loop(Socket).
+    tcp:single(Socket).
 %% --------------------------------------------------------------------
 %% Function: fun/x
 %% Description: fun x skeleton 
 %% Returns:ok|error
 %% ------------------------------------------------------------------
-loop(Socket)->
+single(Socket)->
     receive
 	{tcp, Socket, Bin} ->
 %	    io:format("~p~n",[{node(),?MODULE,?LINE,binary_to_term(Bin),inet:socknames(Socket)}]),
@@ -178,42 +178,42 @@ loop(Socket)->
 		   % io:format("NFVI IN~p~n",[{node(),?MODULE,?LINE,binary_to_term(Bin),inet:socknames(Socket)}]),
 		    Reply=tcp:call(AddrService,PortService,{dns,register,A}),
 		  %  io:format("NFVI OUT~p~n",[{node(),?MODULE,?LINE,Reply,inet:socknames(Socket)}]),
-		    gen_tcp:send(Socket, term_to_binary(Reply)),
-		    tcp:loop(Socket);
+		    gen_tcp:send(Socket, term_to_binary(Reply));
+%		    tcp:loop(Socket);
 		[AddrService,PortService,{M,F,A},?KEY_MSG]->
 		  %  io:format("NFVI IN~p~n",[{node(),?MODULE,?LINE,binary_to_term(Bin),inet:socknames(Socket)}]),
 		    Reply=tcp:call(AddrService,PortService,{M,F,A}),
 		  %  io:format("NFVI OUT~p~n",[{node(),?MODULE,?LINE,Reply,inet:socknames(Socket)}]),
-		    gen_tcp:send(Socket, term_to_binary(Reply)),
-		    tcp:loop(Socket);
+		    gen_tcp:send(Socket, term_to_binary(Reply));
+		%    tcp:loop(Socket);
 	% Service part	
 		[{dns,register,A},?KEY_MSG]->
 		  %  io:format("***************************************************************************~n"),
 		  %  io:format("LOCAL IN~p~n",[{node(),?MODULE,?LINE,binary_to_term(Bin),inet:socknames(Socket)}]),
-		    _R=action(Socket,{dns,register,A}),
+		    _R=action(Socket,{dns,register,A});
 		   % io:format("LOCAL OUT~p~n",[{node(),?MODULE,?LINE,R,inet:socknames(Socket)}]),
-		    tcp:loop(Socket);
+		%    tcp:loop(Socket);
 
 		[{vim,register,A},?KEY_MSG]->
 		  %  io:format("***************************************************************************~n"),
 		  %  io:format("LOCAL IN~p~n",[{node(),?MODULE,?LINE,binary_to_term(Bin),inet:socknames(Socket)}]),
-		    _R=action(Socket,{vim,register,A}),
+		    _R=action(Socket,{vim,register,A});
 		   % io:format("LOCAL OUT~p~n",[{node(),?MODULE,?LINE,R,inet:socknames(Socket)}]),
-		    tcp:loop(Socket);
+		 %   tcp:loop(Socket);
 		[{M,F,A},?KEY_MSG]->
 %		    io:format("***************************************************************************~n"),
 %		    io:format("LOCAL IN~p~n",[{node(),?MODULE,?LINE,binary_to_term(Bin),inet:socknames(Socket)}]),
-		    _R=action(Socket,{M,F,A}),
+		    _R=action(Socket,{M,F,A});
 %		    io:format("LOCAL OUT~p~n",[{node(),?MODULE,?LINE,R,inet:socknames(Socket)}]),
-		    tcp:loop(Socket);		
+		    % tcp:loop(Socket);		
 		{tcp_closed, Socket} ->
-%		    io:format("tcp_closed  ~p~n",[{node(),?MODULE,?LINE,Socket}]),
+		    io:format("tcp_closed  ~p~n",[{node(),?MODULE,?LINE,Socket}]),
 		    gen_tcp:close(Socket),	
 		    tcp_closed;
 		Err ->
 		    io:format("error  ~p~n",[{node(),?MODULE,?LINE,Err,inet:socknames(Socket)}]),
-		    gen_tcp:send(Socket, term_to_binary(Err)),
-		    tcp:loop(Socket)
+		    gen_tcp:send(Socket, term_to_binary(Err))
+		  %  tcp:loop(Socket)
 	    end
     end.
 
